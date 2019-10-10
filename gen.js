@@ -591,8 +591,8 @@ function changeDinamicColor(id,r,g,b)
 $(document).keypress(function(e) {
     if(e.which == 32) 
     {
-        action.reset();
-        action.play();
+        //action.reset();
+        //action.play();
         
         
         var drop = document.getElementById("dropdowna");
