@@ -14,4 +14,9 @@ const store = createStore(rootReducer, composeWithDevTools(
     applyMiddleware(thunkMiddleware)
 ))
 
+// const store = configureStore({
+//     reducer: rootReducer,
+//     // middleware:[]
+// })
+
 export default store

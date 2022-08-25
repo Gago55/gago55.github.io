@@ -2,6 +2,7 @@ import { ThunkAction } from 'redux-thunk'
 import { InferActionsType, StateType } from './store'
 
 const initState = {
+    test: 1
 }
 
 type InitStateType = typeof initState
