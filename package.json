@@ -17,6 +17,8 @@
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@types/three": "^0.130.2",
+    "ammojs-typed": "^1.0.6",
+    "enable3d": "^0.25.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.4",
