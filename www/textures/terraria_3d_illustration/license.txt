@@ -1,0 +1,11 @@
+Model Information:
+* title:	Terraria 3D Illustration
+* source:	https://sketchfab.com/3d-models/terraria-3d-illustration-d99a0f6ff1be455ba42ba9db3e426334
+* author:	nxee (https://sketchfab.com/nxee)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Terraria 3D Illustration" (https://sketchfab.com/3d-models/terraria-3d-illustration-d99a0f6ff1be455ba42ba9db3e426334) by nxee (https://sketchfab.com/nxee) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
