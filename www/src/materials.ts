@@ -1,4 +1,4 @@
-import { MeshBasicMaterial } from 'three'
+import { LineBasicMaterial, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial } from 'three'
 
 export const wallsMaterial = new MeshBasicMaterial({
     color: 'red',
@@ -10,3 +10,5 @@ export const collidersMaterial = new MeshBasicMaterial({
     transparent: true,
     opacity: 0
 })
+
+export const selectionBoxMaterial = new MeshNormalMaterial({ wireframe: true })

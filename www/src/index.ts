@@ -12,7 +12,7 @@ import { AmmoPhysics, ExtendedMesh, PhysicsLoader } from '@enable3d/ammo-physics
 
 // Flat
 // import { TextTexture, TextSprite } from '@enable3d/three-graphics/jsm/flat'
-import { Clock, Group, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, PointLightHelper, Scene, SphereGeometry, TextureLoader, Vector3, WebGLRenderer } from 'three'
+import { Box3, BoxBufferGeometry, BoxGeometry, Clock, Group, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, PointLightHelper, Quaternion, Raycaster, Scene, SphereGeometry, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three'
 import { wallsMaterial } from './materials'
 import * as allMaterials from './materials'
 import { LightGroup } from './helpers'
@@ -21,6 +21,8 @@ import { LightGroup } from './helpers'
 // '/ammo' is the folder where all ammo file are
 PhysicsLoader('/ammo', () => {
     // sizes
+    const developerMode = true
+
     const width = window.innerWidth
     const height = window.innerHeight
 
@@ -32,6 +34,10 @@ PhysicsLoader('/ammo', () => {
         // antialias: true
     })
     let stopRender = false
+    let needRender = false
+
+    const raycaster = new Raycaster()
+    const mouse = { x: 0, y: 0 }
 
     const orbit = new OrbitControls(camera, renderer.domElement)
     let isOrbitPaused = false
@@ -79,7 +85,7 @@ PhysicsLoader('/ammo', () => {
 
 
     // @ts-ignore
-    window.player = player; window.physics = physics; window.THREE = THREE; window.scene = scene; window.children = scene.children; window.camera = camera; window.cameraMovement = cameraMovement; window.mats = allMaterials
+    window.player = player; window.physics = physics; window.THREE = THREE; window.scene = scene; window.children = scene.children; window.camera = camera; window.cameraMovement = cameraMovement; window.mats = allMaterials;
 
     const init = () => {
         // @ts-ignore
@@ -178,8 +184,7 @@ PhysicsLoader('/ammo', () => {
                     playerSpawnPoint = pos.clone()
                     player = createPlayer(physics, scene, pos)
 
-                    isOrbitPaused = setOrbitControl(orbit, camera, player, false)
-
+                    isOrbitPaused = setOrbitControl(scene, orbit, camera, player, false)
                 }
                 else if (child.name === 'Walls') {
                     // @ts-ignore
@@ -266,6 +271,8 @@ PhysicsLoader('/ammo', () => {
 
             setupCollisions()
 
+            renderScene()
+
             animate()
 
         })
@@ -284,22 +291,77 @@ PhysicsLoader('/ammo', () => {
 
     }
 
+    const initEvents = () => {
+        window.addEventListener('resize', () => { handleWindowResize(window.innerWidth, window.innerHeight, renderer, camera) })
+        handleWindowResize(window.innerWidth, window.innerHeight, renderer, camera)
+
+        orbit.addEventListener('change', () => { needRender = true })
+
+        window.addEventListener('mousedown', e => {
+            //Raycaster
+
+            if (renderer.domElement.parentElement && !isOrbitPaused) {
+                mouse.x = ((e.clientX - renderer.domElement.parentElement.offsetLeft) / renderer.domElement.clientWidth) * 2 - 1
+                mouse.y = - ((e.clientY - renderer.domElement.parentElement.offsetTop) / renderer.domElement.clientHeight) * 2 + 1
+
+                raycaster.setFromCamera(mouse, camera)
+
+
+                let intersected = raycaster.intersectObjects(scene.children.filter(child => child.name !== 'World'))
+
+                if (intersected.length) {
+                    removeSelectionBox(scene)
+
+                    const intersectedMesh = intersected[0].object as Mesh
+
+                    // @ts-ignore
+                    window.obj = intersectedMesh
+
+                    console.log(
+                        intersectedMesh.name,
+                        // intersectedMesh
+                    )
+
+                    intersectedMesh.geometry.computeBoundingBox()
+                    const bbox = intersectedMesh.geometry.boundingBox as Box3
+                    const bboxMultiplier = intersectedMesh.name === 'Player' ? 1 : 100
+                    const selectionBox = new Mesh(new BoxBufferGeometry((bbox.max.x - bbox.min.x) * bboxMultiplier, (bbox.max.y - bbox.min.y) * bboxMultiplier, (bbox.max.z - bbox.min.z) * bboxMultiplier), allMaterials.selectionBoxMaterial)
+                    selectionBox.name = 'Selection Box'
+
+                    const pos = new Vector3()
+                    intersectedMesh.getWorldPosition(pos)
+
+                    const quat = new Quaternion()
+                    intersectedMesh.getWorldQuaternion(quat)
+
+                    selectionBox.position.set(pos.x, pos.y, pos.z)
+                    selectionBox.setRotationFromQuaternion(quat)
+
+                    scene.add(selectionBox)
+
+                    needRender = true
+                }
+            }
+        })
+    }
 
     const initInputs = () => {
         window.addEventListener('keydown', e => {
-            if (e.key == 'q' && e.ctrlKey) {
-                stopRender = !stopRender
-            }
+            if (developerMode) {
+
+                if (e.key == 'q' && e.ctrlKey) {
+                    stopRender = !stopRender
+                }
 
 
-            if (e.key === 'c') {
-                // this.setOrbitControl(!this.orbit.enabled)
-                isOrbitPaused = setOrbitControl(orbit, camera, player, isOrbitPaused)
-            }
+                if (e.key === '0') {
+                    isOrbitPaused = setOrbitControl(scene, orbit, camera, player, isOrbitPaused)
+                }
 
-            if (e.key === 'p') {
-                physicsDebug ? physics.debug?.disable() : physics.debug?.enable()
-                physicsDebug = !physicsDebug
+                if (e.key === '7') {
+                    physicsDebug ? physics.debug?.disable() : physics.debug?.enable()
+                    physicsDebug = !physicsDebug
+                }
             }
 
             // if (this.isOrbitPaused)
@@ -336,6 +398,7 @@ PhysicsLoader('/ammo', () => {
         })
 
     }
+
 
     const setupPlayerCollision = () => {
         player.body.on.collision((obj, e) => {
@@ -491,15 +554,25 @@ PhysicsLoader('/ammo', () => {
     // loop
     const animate = () => {
 
-        if (!stopRender) {
-            renderScene()
+        if (isOrbitPaused) {
+            if (!stopRender) {
+                renderScene()
+            }
         }
+        else {
+            if (needRender) {
+                renderScene()
+                needRender = false
+            }
+        }
+
 
         requestAnimationFrame(animate)
     }
 
     init()
     initInputs()
+    initEvents()
 })
 
 const showHint = (hints: Group, pos: Vector3) => {
@@ -531,20 +604,34 @@ const respawnPlayer = (player: ExtendedMesh, physics: AmmoPhysics, pos: Vector3,
     setupCollision()
 }
 
-const setOrbitControl = (control: OrbitControls, camera: PerspectiveCamera, player: Mesh, value: boolean) => {
+const setOrbitControl = (scene: Scene, control: OrbitControls, camera: PerspectiveCamera, player: Mesh, value: boolean) => {
     control.enabled = value
 
     if (value) {
         const { x, y, z } = player.position
-        camera.position.set(x, y + 500, z + 200)
+        camera.position.set(x, y + 100, z + 300)
         camera.lookAt(x, y, z)
         control.target = new Vector3(x, y, z)
         // control.
     }
+    else
+        removeSelectionBox(scene)
 
     return !value
 }
 
 const getNearestCameraPos = (v: Vector3, poses: Vector3[]) => poses.reduce((a, b) => ((v.distanceTo(a) < v.distanceTo(b)) ? a : b))
 
+const handleWindowResize = (width: number, height: number, renderer: WebGLRenderer, camera: PerspectiveCamera) => {
+    renderer.setSize(width, height)
 
+    camera.aspect = width / height
+    camera.updateProjectionMatrix()
+}
+
+const removeSelectionBox = (scene: Scene) => {
+    const index = scene.children.findIndex(child => child.name === 'Selection Box')
+
+    if (index !== -1)
+        scene.remove(scene.children[index])
+}
