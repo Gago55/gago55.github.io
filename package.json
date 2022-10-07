@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@enable3d/ammo-physics": "^0.25.2",
+    "stats-js": "^1.0.1",
     "three": "^0.141.0"
   }
 }
