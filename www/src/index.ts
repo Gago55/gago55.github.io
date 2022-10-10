@@ -12,7 +12,7 @@ import { AmmoPhysics, ExtendedMesh, PhysicsLoader } from '@enable3d/ammo-physics
 
 // Flat
 // import { TextTexture, TextSprite } from '@enable3d/three-graphics/jsm/flat'
-import { Box3, BoxBufferGeometry, BoxGeometry, Clock, Group, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, PointLightHelper, Quaternion, Raycaster, Scene, SphereGeometry, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three'
+import { Box3, BoxBufferGeometry, BoxGeometry, Clock, Group, Material, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, PointLightHelper, Quaternion, Raycaster, Scene, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three'
 import { wallsMaterial } from './materials'
 import * as allMaterials from './materials'
 import { LightGroup } from './helpers'
@@ -22,6 +22,12 @@ import { LightGroup } from './helpers'
 PhysicsLoader('/ammo', () => {
     // sizes
     const developerMode = true
+
+    //inputs
+    const upKeys = ['w', 'W', 'ArrowUp', 'ш', 'Ш', 'ո', 'Ո']
+    const leftKeys = ['a', 'A', 'ArrowLeft', 'а', 'А', 'ա', 'Ա']
+    const rightKeys = ['d', 'D', 'ArrowRight', 'д', 'Д', 'դ', 'Դ']
+    const downKeys = ['s', 'S', 'ArrowDown', 'с', 'С', 'ս', 'Ս']
 
     const width = window.innerWidth
     const height = window.innerHeight
@@ -72,6 +78,8 @@ PhysicsLoader('/ammo', () => {
     let isCameraOnPlayer = true
 
     const playerSkins = new Group()
+    const skins: { name: string, map: Texture }[] = []
+
     const skinsMovement = {
         speed: 0.3,
         min: -20,
@@ -82,6 +90,7 @@ PhysicsLoader('/ammo', () => {
     }
 
     const gltfCollections: string[] = []
+
 
 
     // @ts-ignore
@@ -207,6 +216,10 @@ PhysicsLoader('/ammo', () => {
                     cameraPoses.push(child.position.clone())
                 }
                 else if (collectionName === 'Player Skins') {
+                    skins.push({
+                        name: child.name,
+                        map: (child as any).material.map
+                    })
                     playerSkins.add(child.clone())
                 }
                 else if (parentCollectionName === 'Kinematics') {
@@ -348,6 +361,7 @@ PhysicsLoader('/ammo', () => {
     const initInputs = () => {
         window.addEventListener('keydown', e => {
             if (developerMode) {
+                console.log(e.key);
 
                 if (e.key == 'q' && e.ctrlKey) {
                     stopRender = !stopRender
@@ -365,23 +379,16 @@ PhysicsLoader('/ammo', () => {
             }
 
             // if (this.isOrbitPaused)
-            switch (e.key) {
-                case 'd':
-                    playerMovement.x = 1
-                    break
-                case 'a':
-                    playerMovement.x = - 1
-                    break
-                case 'w':
-                    playerMovement.z = - 1
-                    break
-                case 's':
-                    playerMovement.z = 1
-                    break
-                case ' ':
-                    playerMovement.needJump = true
-                    break
-            }
+            if (upKeys.includes(e.key))
+                playerMovement.z = - 1
+            else if (leftKeys.includes(e.key))
+                playerMovement.x = - 1
+            else if (rightKeys.includes(e.key))
+                playerMovement.x = 1
+            else if (downKeys.includes(e.key))
+                playerMovement.z = 1
+            else if (e.key === ' ')
+                playerMovement.needJump = true
 
             if (e.key === 'Enter' && actualCollider) {
                 handleEnter(actualCollider)
@@ -390,9 +397,9 @@ PhysicsLoader('/ammo', () => {
 
         window.addEventListener('keyup', (e) => {
 
-            if (e.key === 'w' || e.key === 's')
+            if (upKeys.includes(e.key) || downKeys.includes(e.key))
                 playerMovement.z = 0
-            if (e.key === 'a' || e.key === 'd')
+            if (leftKeys.includes(e.key) || rightKeys.includes(e.key))
                 playerMovement.x = 0
 
         })
@@ -475,8 +482,15 @@ PhysicsLoader('/ammo', () => {
         setupPlayerCollision()
     }
 
-    const handleEnter = (event) => {
-        console.log(event);
+    const handleEnter = (event: string) => {
+
+        if (event.startsWith('Skin')) {
+            const skin = skins.find(s => s.name === event)
+
+            if (skin) {
+                (player as any).material.map = skin.map
+            }
+        }
 
     }
 
