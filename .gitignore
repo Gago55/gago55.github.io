@@ -2,4 +2,6 @@
 /node_modules
 /package-lock.json
 /www/bundle.js
+/www/assets
+/www/textures
 index.js

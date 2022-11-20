@@ -12,7 +12,7 @@ import { AmmoPhysics, ExtendedMesh, PhysicsLoader } from '@enable3d/ammo-physics
 
 // Flat
 // import { TextTexture, TextSprite } from '@enable3d/three-graphics/jsm/flat'
-import { Box3, BoxBufferGeometry, BoxGeometry, Clock, Group, Material, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, PointLightHelper, Quaternion, Raycaster, Scene, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three'
+import { Box3, BoxBufferGeometry, BoxGeometry, Clock, Group, Material, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, PointLightHelper, Quaternion, Raycaster, RepeatWrapping, Scene, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three'
 import { wallsMaterial } from './materials'
 import * as allMaterials from './materials'
 import { LightGroup } from './helpers'
@@ -57,9 +57,12 @@ PhysicsLoader('/ammo', () => {
     let isPlayerHasCollision = false
     let playerSpawnPoint = new Vector3()
 
-    const walls = new Group()
+    let walls: ExtendedMesh
+    // const walls = new Group()
     const wallForce = 5
 
+    const statics = new Group()
+    const dynamics = new Group()
     const kinematics = new Group()
 
     const colliders = new Group()
@@ -76,8 +79,10 @@ PhysicsLoader('/ammo', () => {
     const cameraPoses: Vector3[] = []
     let isCameraMoving = false
     let isCameraOnPlayer = true
+    const cameraBox = physics.add.box({ collisionFlags: 6 }, { normal: {} })
 
     const playerSkins = new Group()
+    const socialLogos = new Group()
     const skins: { name: string, map: Texture }[] = []
 
     const skinsMovement = {
@@ -94,7 +99,7 @@ PhysicsLoader('/ammo', () => {
 
 
     // @ts-ignore
-    window.player = player; window.physics = physics; window.THREE = THREE; window.scene = scene; window.children = scene.children; window.camera = camera; window.cameraMovement = cameraMovement; window.mats = allMaterials;
+    window.player = player; window.physics = physics; window.THREE = THREE; window.scene = scene; window.children = scene.children; window.camera = camera; window.cameraMovement = cameraMovement; window.mats = allMaterials; window.dynamics = dynamics
 
     const init = () => {
         // @ts-ignore
@@ -149,17 +154,17 @@ PhysicsLoader('/ammo', () => {
         // })
 
 
-        new GLTFLoader().load('/assets/models/world1.glb', (gltf) => {
+        new GLTFLoader().load('/assets/models/world.glb', (gltf) => {
 
             let world
-            const statics = new Group()
-            statics.name = 'Statics'
-            const dynamics = new Group()
-            dynamics.name = 'Dynamics'
 
-            walls.name = 'Walls'
+
+            statics.name = 'Statics'
+            dynamics.name = 'Dynamics'
+            // walls.name = 'Walls'
             kinematics.name = 'Kinematics'
             playerSkins.name = 'Player Skins'
+            socialLogos.name = 'Social Logos'
             colliders.name = 'Colliders'
             hints.name = 'Hints'
             // debugger
@@ -187,6 +192,14 @@ PhysicsLoader('/ammo', () => {
                 child.position.z *= 100
                 if (child.name === 'World') {
                     world = child
+                    world.material = world.material.clone()
+
+                    new TextureLoader().load('../assets/textures/ground.jpg', t => {
+                        t.wrapS = t.wrapT = RepeatWrapping
+                        t.repeat.set(50, 50)
+                        world.material.map = t
+                        world.material.needsUpdate = true
+                    })
                 }
                 else if (child.name === 'Player') {
                     const pos = new Vector3(child.position.x, child.position.y, child.position.z)
@@ -198,20 +211,37 @@ PhysicsLoader('/ammo', () => {
                 else if (child.name === 'Walls') {
                     // @ts-ignore
                     child.material = wallsMaterial
-                    scene.add(child.clone())
+                    // scene.add(child.clone())
+                    walls = child.clone() as any
+                    // debugger
+                    statics.add(walls)
                 }
                 else if (parentCollectionName === 'Statics') {
                     statics.add(child.clone())
                 }
                 else if (parentCollectionName === 'Dynamics') {
+                    // if (child.name.startsWith('Group_')) {
+                    //     for (const ch of child.children) {
+
+                    //         const newChild = ch.clone()
+                    //         const pos = new Vector3()
+                    //         newChild.getWorldPosition(pos)
+                    //         console.log(pos.x * 1000, pos.y * 1000, pos.z * 1000);
+
+                    //         newChild.position.set(pos.x * 1000, pos.y * 1000, pos.z * 1000)
+
+                    //         dynamics.add(newChild)
+                    //     }
+                    // }
+                    // else
                     dynamics.add(child.clone())
                 }
-                else if (parentCollectionName === 'Walls') {
-                    // @ts-ignore
-                    child.material = collidersMaterial
-                    child.scale.set(98, 98, 98)
-                    walls.add(child.clone())
-                }
+                // else if (parentCollectionName === 'Walls') {
+                // @ts-ignore
+                // child.material = collidersMaterial
+                // child.scale.set(98, 98, 98)
+                // walls.add(child.clone())
+                // } 
                 else if (parentCollectionName === 'Camera Poses') {
                     cameraPoses.push(child.position.clone())
                 }
@@ -221,6 +251,8 @@ PhysicsLoader('/ammo', () => {
                         map: (child as any).material.map
                     })
                     playerSkins.add(child.clone())
+                } else if (collectionName === 'Social Logos') {
+                    socialLogos.add(child.clone())
                 }
                 else if (parentCollectionName === 'Kinematics') {
                     kinematics.add(child.clone())
@@ -240,10 +272,11 @@ PhysicsLoader('/ammo', () => {
             // suz.position.y= 10
             scene.add(world)
             scene.add(statics)
-            scene.add(walls)
+            // scene.add(walls)
             scene.add(dynamics)
             scene.add(kinematics)
             scene.add(playerSkins)
+            scene.add(socialLogos)
             scene.add(colliders)
             scene.add(hints)
             // dynamics.position.y = 50
@@ -255,26 +288,37 @@ PhysicsLoader('/ammo', () => {
             // debugger
             physics.add.existing(world as any, { shape: 'concave', collisionFlags: 1 })
 
-            if (statics.children.length)
-                physics.add.existing(statics as any, { shape: 'concave', collisionFlags: 1 })
+            // if (statics.children.length)
+            //     physics.add.existing(statics as any, { shape: 'concave', collisionFlags: 1 })
 
-            // for (const child of statics.children) {
-            //     physics.add.existing(child as any, { shape: 'concave', collisionFlags: 1 })
-            // }
+            for (const child of statics.children) {
+                physics.add.existing(child as any, { shape: 'concave', collisionFlags: 1 })
+            }
+            // walls.body.checkCollisions = true
 
             for (const child of dynamics.children) {
-                physics.add.existing(child as any, { shape: 'hull' })
+                if (child.name.startsWith('Group_')) {
+                    for (const ch of child.children) {
+                        physics.add.existing(ch as any, { shape: 'hull' })
+                    }
+                }
+                else
+                    physics.add.existing(child as any, { shape: 'hull' })
             }
 
-            for (const child of walls.children) {
-                physics.add.existing(child as any, { shape: 'hull', collisionFlags: 6 })
-            }
+            // for (const child of walls.children) {
+            //     physics.add.existing(child as any, { shape: 'hull', collisionFlags: 6 })
+            // }
 
             for (const child of kinematics.children) {
                 physics.add.existing(child as any, { shape: 'hull', collisionFlags: 2 })
             }
 
             for (const child of playerSkins.children) {
+                physics.add.existing(child as any, { shape: 'hull', collisionFlags: 2 })
+            }
+
+            for (const child of socialLogos.children) {
                 physics.add.existing(child as any, { shape: 'hull', collisionFlags: 2 })
             }
 
@@ -361,7 +405,6 @@ PhysicsLoader('/ammo', () => {
     const initInputs = () => {
         window.addEventListener('keydown', e => {
             if (developerMode) {
-                console.log(e.key);
 
                 if (e.key == 'q' && e.ctrlKey) {
                     stopRender = !stopRender
@@ -418,53 +461,82 @@ PhysicsLoader('/ammo', () => {
 
     const setupCollisions = () => {
 
-        for (const wall of walls.children) {
-            physics.add.collider(wall as any, player as any, e => {
-                if (wall.name.startsWith('frontLeft')) {
-                    player.body.applyForceX(wallForce)
-                    player.body.applyForceZ(wallForce)
-                }
-                else if (wall.name.startsWith('frontRight')) {
-                    player.body.applyForceX(-wallForce)
-                    player.body.applyForceZ(wallForce)
-                }
-                else if (wall.name.startsWith('backLeft')) {
-                    player.body.applyForceX(wallForce)
-                    player.body.applyForceZ(-wallForce)
-                }
-                else if (wall.name.startsWith('backRight')) {
-                    player.body.applyForceX(-wallForce)
-                    player.body.applyForceZ(-wallForce)
-                }
-                else if (wall.name.startsWith('left')) {
-                    player.body.applyForceX(wallForce)
-                }
-                else if (wall.name.startsWith('right')) {
-                    player.body.applyForceX(-wallForce)
-                }
-                else if (wall.name.startsWith('front')) {
-                    player.body.applyForceZ(wallForce)
-                }
-                else if (wall.name.startsWith('back')) {
-                    player.body.applyForceZ(-wallForce)
-                }
-
-                if (e !== 'end' && !isCameraMoving && cameraPoses.length) {
-                    cameraMovement.progress = 0
-                    cameraMovement.start = new Vector3(camera.position.x, camera.position.y, camera.position.z)
-                    cameraMovement.end = getNearestCameraPos(camera.position, cameraPoses)
-                    isCameraMoving = true
-                    isCameraOnPlayer = false
-                }
-
-                if (e === 'end' && !isCameraMoving && cameraPoses.length) {
-                    isCameraOnPlayer = true
-                }
+        // for (const wall of walls.children) {
+        // physics.add.collider(wall as any, camera as any, e => {
+        //     // if (wall.name.startsWith('frontLeft')) {
+        //     //     player.body.applyForceX(wallForce)
+        //     //     player.body.applyForceZ(wallForce)
+        //     // }
+        //     // else if (wall.name.startsWith('frontRight')) {
+        //     //     player.body.applyForceX(-wallForce)
+        //     //     player.body.applyForceZ(wallForce)
+        //     // }
+        //     // else if (wall.name.startsWith('backLeft')) {
+        //     //     player.body.applyForceX(wallForce)
+        //     //     player.body.applyForceZ(-wallForce)
+        //     // }
+        //     // else if (wall.name.startsWith('backRight')) {
+        //     //     player.body.applyForceX(-wallForce)
+        //     //     player.body.applyForceZ(-wallForce)
+        //     // }
+        //     // else if (wall.name.startsWith('left')) {
+        //     //     player.body.applyForceX(wallForce)
+        //     // }
+        //     // else if (wall.name.startsWith('right')) {
+        //     //     player.body.applyForceX(-wallForce)
+        //     // }
+        //     // else if (wall.name.startsWith('front')) {
+        //     //     player.body.applyForceZ(wallForce)
+        //     // }
+        //     // else if (wall.name.startsWith('back')) {
+        //     //     player.body.applyForceZ(-wallForce)
+        //     // }
+        //     console.log(e);
 
 
+        //     if (e !== 'end' && !isCameraMoving && cameraPoses.length) {
+        //         cameraMovement.progress = 0
+        //         cameraMovement.start = new Vector3(camera.position.x, camera.position.y, camera.position.z)
+        //         cameraMovement.end = getNearestCameraPos(camera.position, cameraPoses)
+        //         isCameraMoving = true
+        //         isCameraOnPlayer = false
+        //     }
 
-            })
-        }
+        //     if (e === 'end' && !isCameraMoving && cameraPoses.length) {
+        //         isCameraOnPlayer = true
+        //     }
+
+
+
+        // })
+        //     ;
+        // if (wall.name === 'back')
+        //     (wall as ExtendedMesh).body.on.collision((o, e) => {
+        //         if (o.name !== 'World')
+        //             console.log(o, e);
+
+        //     })
+        // }
+
+        // cameraBox.body.on.collision((obj, e) => {
+        //     // physics.add.collider(walls as any, cameraBox as any, e => {
+        //     if (obj.name === 'Walls') {
+        //         console.log(obj, e)
+        //         if (e !== 'end' && !isCameraMoving && cameraPoses.length) {
+        //             cameraMovement.progress = 0
+        //             cameraMovement.start = new Vector3(camera.position.x, camera.position.y, camera.position.z)
+        //             cameraMovement.end = getNearestCameraPos(camera.position, cameraPoses)
+        //             isCameraMoving = true
+        //             isCameraOnPlayer = false
+        //         }
+
+        //         if (e === 'end' && !isCameraMoving && cameraPoses.length) {
+        //             isCameraOnPlayer = true
+        //         }
+        //     }
+
+        // })
+        // })
 
         for (const collider of colliders.children) {
             physics.add.collider(collider as any, player as any, e => {
@@ -490,6 +562,15 @@ PhysicsLoader('/ammo', () => {
             if (skin) {
                 (player as any).material.map = skin.map
             }
+        }
+        else if (event === 'Github') {
+            window.open("https://github.com/Gago55", '_blank')?.focus()
+        }
+        else if (event === 'Linkedin') {
+            alert('Lazy to open account :)')
+        }
+        else if (event === 'Email') {
+            alert('xgagik8@gmail.com')
         }
 
     }
@@ -529,6 +610,10 @@ PhysicsLoader('/ammo', () => {
             (skin as ExtendedMesh).body.needUpdate = true
         }
 
+        for (const socialLogo of socialLogos.children) {
+            socialLogo.rotation.y += .01;
+            (socialLogo as ExtendedMesh).body.needUpdate = true
+        }
 
         physics.update(clock.getDelta() * 1000)
 
@@ -563,6 +648,12 @@ PhysicsLoader('/ammo', () => {
             }
             camera.lookAt(player.position)
 
+        }
+
+        {
+            const { x, y, z } = player.position
+            cameraBox.position.set(x, y + cameraOffsetY, z + cameraOffsetZ)
+            cameraBox.body.needUpdate = true
         }
     }
     // loop
@@ -599,7 +690,7 @@ const hideHint = (hints: Group, pos: Vector3) => {
 
 const createPlayer = (physics: AmmoPhysics, scene: Scene, pos: Vector3): ExtendedMesh => {
     const mesh = new Mesh(new SphereGeometry(10, 16, 16,), new MeshBasicMaterial())
-    new TextureLoader().load('/textures/player.png', t => {
+    new TextureLoader().load('../assets/textures/player.png', t => {
         mesh.material.map = t
         mesh.material.needsUpdate = true
     })
