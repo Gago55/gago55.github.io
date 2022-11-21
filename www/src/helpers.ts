@@ -61,3 +61,32 @@ export class LightGroup {
     }
 
 }
+
+export const changeHintMessage = (document: Document, message: string) => {
+    const hintDiv = document.getElementById('hint')
+
+    if (!hintDiv) return
+
+    hintDiv.innerHTML = message
+}
+
+export const showHintMessage = (document: Document) => {
+    const hintDiv = document.getElementById('hint')
+
+    if (!hintDiv) return
+
+    hintDiv.style.left = '20px'
+    // hintDiv.classList.remove('hideHint')
+    // hintDiv.classList.add('showHint')
+}
+
+export const hideHintMessage = (document: Document) => {
+    const hintDiv = document.getElementById('hint')
+
+    if (!hintDiv) return
+
+    hintDiv.style.left = `-${hintDiv.clientWidth + 10}px`
+
+    // hintDiv.classList.add('hideHint')
+    // hintDiv.classList.remove('showHint')
+}

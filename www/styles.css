@@ -1,0 +1,20 @@
+#hint {
+    font-family: cursive;
+    font-size: 30px;
+    position: absolute;
+    top: 50px;
+    transition: .8s;
+    transition-timing-function: ease;
+}
+
+.showHint {
+    transition: .8s;
+    transition-timing-function: ease;
+    left: 20px !important;
+}
+
+.hideHint {
+    transition: .8s;
+    transition-timing-function: ease;
+    left: -200px !important;
+}

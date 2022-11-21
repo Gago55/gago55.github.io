@@ -15,7 +15,7 @@ import { AmmoPhysics, ExtendedMesh, PhysicsLoader } from '@enable3d/ammo-physics
 import { Box3, BoxBufferGeometry, BoxGeometry, Clock, Group, Material, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, PointLightHelper, Quaternion, Raycaster, RepeatWrapping, Scene, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three'
 import { wallsMaterial } from './materials'
 import * as allMaterials from './materials'
-import { LightGroup } from './helpers'
+import { changeHintMessage, LightGroup, showHintMessage, hideHintMessage } from './helpers'
 
 
 // '/ammo' is the folder where all ammo file are
@@ -105,6 +105,8 @@ PhysicsLoader('/ammo', () => {
         // @ts-ignore
         (function () { var script = document.createElement('script'); script.onload = function () { var stats = new Stats(); document.body.appendChild(stats.dom); requestAnimationFrame(function loop() { stats.update(); requestAnimationFrame(loop) }); }; script.src = '//cdn.jsdelivr.net/gh/Kevnz/stats.js/build/stats.min.js'; document.head.appendChild(script); })()
         // document.body.appendChild(stats)
+        hideHintMessage(document)
+
 
         scene.background = new THREE.Color(0xf0f0f0)
 
@@ -542,11 +544,25 @@ PhysicsLoader('/ammo', () => {
             physics.add.collider(collider as any, player as any, e => {
                 if (e === 'collision' && !actualCollider) {
                     actualCollider = collider.name.split('_')[1]
+
+                    if (actualCollider === 'Linkedin') {
+                        changeHintMessage(document, 'Hasn\'t create acc yet, too lazy :)')
+                        showHintMessage(document)
+                        return
+                    }
+                    else if (actualCollider === 'Email') {
+                        changeHintMessage(document, 'xgagik8@gmail.com <br/>Press enter to copy email address')
+                        showHintMessage(document)
+                    }
+
                     showHint(hints, player.position)
+
                 }
                 else if (e === 'end') {
                     actualCollider = undefined
                     hideHint(hints, player.position)
+                    hideHintMessage(document)
+
                 }
             })
         }
